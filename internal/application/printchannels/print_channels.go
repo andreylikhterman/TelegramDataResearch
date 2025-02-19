@@ -32,11 +32,13 @@ func PrintChannels(ctx context.Context, client *telegram.Client, log *zap.Logger
 		default:
 			log.Error("Unknown posts response type", zap.Any("response", p))
 		}
+
 		for _, msg := range messages {
 			message, ok := msg.(*tg.Message)
 			if !ok || message.Message == "" {
 				continue
 			}
+
 			log.Info("Channel post",
 				zap.String("channel", ch.Title),
 				zap.String("text", message.Message),
@@ -67,6 +69,7 @@ func PrintChannels(ctx context.Context, client *telegram.Client, log *zap.Logger
 		log.Info("No discussion group for channel", zap.String("channel", ch.Title))
 		return
 	}
+
 	if linkedChatID == 0 {
 		log.Info("No discussion group for channel", zap.String("channel", ch.Title))
 		return
@@ -74,6 +77,7 @@ func PrintChannels(ctx context.Context, client *telegram.Client, log *zap.Logger
 
 	// Ищем объект обсуждения в списке чатов, чтобы получить access hash (если требуется).
 	var discussionPeer tg.InputPeerClass
+
 	for _, chat := range fullData.Chats {
 		switch c := chat.(type) {
 		case *tg.Channel:
@@ -93,6 +97,7 @@ func PrintChannels(ctx context.Context, client *telegram.Client, log *zap.Logger
 			}
 		}
 	}
+
 	if discussionPeer == nil {
 		log.Error("Discussion peer not found", zap.Int64("linkedChatID", linkedChatID))
 		return
@@ -118,11 +123,13 @@ func PrintChannels(ctx context.Context, client *telegram.Client, log *zap.Logger
 		log.Error("Unknown comments response type", zap.Any("response", c))
 		return
 	}
+
 	for _, msg := range commMessages {
 		message, ok := msg.(*tg.Message)
 		if !ok || message.Message == "" {
 			continue
 		}
+
 		log.Info("Discussion comment",
 			zap.String("channel", ch.Title),
 			zap.String("text", message.Message),

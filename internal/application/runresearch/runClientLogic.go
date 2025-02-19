@@ -1,7 +1,6 @@
 package runresearch
 
 import (
-	"context"
 	"github.com/andreylikhterman/TelegramDataResearch/internal/application/printchannels"
 	"github.com/andreylikhterman/TelegramDataResearch/internal/domain/publicchannel"
 	"github.com/go-faster/errors"
@@ -10,6 +9,8 @@ import (
 	"github.com/gotd/td/telegram/updates"
 	"github.com/gotd/td/tg"
 	"go.uber.org/zap"
+
+	"context"
 	"time"
 )
 
@@ -28,6 +29,7 @@ func runClientLogic(client *telegram.Client, flow *auth.Flow, log *zap.Logger, g
 		channelUsernames := []string{"anillarionov", "cherevatstreams"}
 
 		var channels []publicchannel.PublicChannel
+
 		for _, username := range channelUsernames {
 			res, err := client.API().ContactsResolveUsername(ctx, &tg.ContactsResolveUsernameRequest{
 				Username: username,
@@ -36,17 +38,21 @@ func runClientLogic(client *telegram.Client, flow *auth.Flow, log *zap.Logger, g
 				log.Error("Не удалось разрешить username", zap.String("username", username), zap.Error(err))
 				continue
 			}
+
 			var channel *tg.Channel
+
 			for _, chat := range res.Chats {
 				if ch, ok := chat.(*tg.Channel); ok {
 					channel = ch
 					break
 				}
 			}
+
 			if channel == nil {
 				log.Error("Канал не найден", zap.String("username", username))
 				continue
 			}
+
 			channels = append(channels, publicchannel.PublicChannel{
 				ID:         channel.ID,
 				AccessHash: channel.AccessHash,
@@ -67,6 +73,7 @@ func runClientLogic(client *telegram.Client, flow *auth.Flow, log *zap.Logger, g
 		go func() {
 			ticker := time.NewTicker(1 * time.Minute)
 			defer ticker.Stop()
+
 			for {
 				select {
 				case <-ticker.C:
@@ -81,6 +88,7 @@ func runClientLogic(client *telegram.Client, flow *auth.Flow, log *zap.Logger, g
 
 		// Остальная логика обработки обновлений
 		_, err = client.API().UpdatesGetState(ctx)
+
 		if err != nil {
 			return errors.Wrap(err, "get updates state")
 		}

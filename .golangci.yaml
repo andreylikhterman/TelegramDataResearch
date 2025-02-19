@@ -32,8 +32,6 @@ linters:
     - stylecheck
     - typecheck
     - unconvert
-    - unparam
-    - unused
     - whitespace
     - asciicheck
     - gocognit

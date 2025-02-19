@@ -2,8 +2,9 @@ package filestorage
 
 import (
 	"context"
-	"github.com/gotd/td/session"
 	"os"
+
+	"github.com/gotd/td/session"
 )
 
 type FileStorage struct {
@@ -20,8 +21,10 @@ func (fs *FileStorage) LoadSession(ctx context.Context) ([]byte, error) {
 		if os.IsNotExist(err) {
 			return nil, session.ErrNotFound
 		}
+
 		return nil, err
 	}
+
 	return data, nil
 }
 
