@@ -1,4 +1,4 @@
-module telegram_data_research
+module github.com/andreylikhterman/TelegramDataResearch
 
 go 1.23.3
 
