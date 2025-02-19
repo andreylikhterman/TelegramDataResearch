@@ -11,5 +11,5 @@ build:
 ## test: run all tests
 .PHONY: test
 test:
-	@go test -coverpkg='telegram_data_research/...' --race -count=1 -coverprofile='$(COVERAGE_FILE)' ./...
+	@go test -coverpkg='github.com/andreylikhterman/TelegramDataResearch/...' --race -count=1 -coverprofile='$(COVERAGE_FILE)' ./...
 	@go tool cover -func='$(COVERAGE_FILE)' | grep ^total | tr -s '\t'

@@ -1,54 +1,21 @@
-package RunResearch
+package runresearch
 
 import (
 	"context"
-	"time"
-
-	"github.com/andreylikhterman/TelegramDataResearch/internal/application/PrintChannels"
-	"github.com/andreylikhterman/TelegramDataResearch/internal/domain/Filestorage"
-	"github.com/andreylikhterman/TelegramDataResearch/internal/domain/PublicChannel"
+	"github.com/andreylikhterman/TelegramDataResearch/internal/application/printchannels"
+	"github.com/andreylikhterman/TelegramDataResearch/internal/domain/publicchannel"
 	"github.com/go-faster/errors"
-	"github.com/gotd/td/examples"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/telegram/updates"
-	updhook "github.com/gotd/td/telegram/updates/hook"
 	"github.com/gotd/td/tg"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"time"
 )
 
-func RunResearch(ctx context.Context) error {
-	log, _ := zap.NewDevelopment(
-		zap.IncreaseLevel(zapcore.InfoLevel),
-		zap.AddStacktrace(zapcore.FatalLevel),
-	)
-	defer func() { _ = log.Sync() }()
-
-	d := tg.NewUpdateDispatcher()
-	gaps := updates.New(updates.Config{
-		Handler: d,
-		Logger:  log.Named("gaps"),
-	})
-
-	flow := auth.NewFlow(examples.Terminal{}, auth.SendCodeOptions{})
-	fileStorage := Filestorage.NewFileStorage("session.json")
-
-	client := telegram.NewClient(
-		20981738,                           // Ваш api_id
-		"a60a5eea86f42605f459a51c6e393cc4", // Ваш api_hash
-		telegram.Options{
-			Logger:         log,
-			UpdateHandler:  gaps,
-			SessionStorage: fileStorage,
-			Middlewares: []telegram.Middleware{
-				updhook.UpdateHook(gaps.Handle),
-			},
-		},
-	)
-
-	return client.Run(ctx, func(ctx context.Context) error {
-		if err := client.Auth().IfNecessary(ctx, flow); err != nil {
+func runClientLogic(client *telegram.Client, flow *auth.Flow, log *zap.Logger, gaps *updates.Manager) func(context.Context) error {
+	return func(ctx context.Context) error {
+		if err := client.Auth().IfNecessary(ctx, *flow); err != nil {
 			return errors.Wrap(err, "auth")
 		}
 
@@ -60,7 +27,7 @@ func RunResearch(ctx context.Context) error {
 		// Список username каналов
 		channelUsernames := []string{"anillarionov", "cherevatstreams"}
 
-		var channels []PublicChannel.PublicChannel
+		var channels []publicchannel.PublicChannel
 		for _, username := range channelUsernames {
 			res, err := client.API().ContactsResolveUsername(ctx, &tg.ContactsResolveUsernameRequest{
 				Username: username,
@@ -80,7 +47,7 @@ func RunResearch(ctx context.Context) error {
 				log.Error("Канал не найден", zap.String("username", username))
 				continue
 			}
-			channels = append(channels, PublicChannel.PublicChannel{
+			channels = append(channels, publicchannel.PublicChannel{
 				ID:         channel.ID,
 				AccessHash: channel.AccessHash,
 				Title:      channel.Title,
@@ -93,7 +60,7 @@ func RunResearch(ctx context.Context) error {
 
 		// Начальный запрос для всех каналов.
 		for _, ch := range channels {
-			PrintChannels.PrintChannels(ctx, client, log, ch)
+			printchannels.PrintChannels(ctx, client, log, ch)
 		}
 
 		// Периодически (каждую минуту) обновляем историю постов и комментариев для каждого канала.
@@ -104,7 +71,7 @@ func RunResearch(ctx context.Context) error {
 				select {
 				case <-ticker.C:
 					for _, ch := range channels {
-						PrintChannels.PrintChannels(ctx, client, log, ch)
+						printchannels.PrintChannels(ctx, client, log, ch)
 					}
 				case <-ctx.Done():
 					return
@@ -123,5 +90,5 @@ func RunResearch(ctx context.Context) error {
 				log.Info("Gaps started")
 			},
 		})
-	})
+	}
 }

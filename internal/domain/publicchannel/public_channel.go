@@ -1,4 +1,4 @@
-package PublicChannel
+package publicchannel
 
 type PublicChannel struct {
 	ID         int64

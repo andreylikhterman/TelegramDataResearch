@@ -1,17 +1,17 @@
-package PrintChannels
+package printchannels
 
 import (
 	"context"
 	"time"
 
-	"github.com/andreylikhterman/TelegramDataResearch/internal/domain/PublicChannel"
+	"github.com/andreylikhterman/TelegramDataResearch/internal/domain/publicchannel"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
 	"go.uber.org/zap"
 )
 
 // PrintChannels получает и выводит историю постов и, если присутствует, комментарии (discussion) канала.
-func PrintChannels(ctx context.Context, client *telegram.Client, log *zap.Logger, ch PublicChannel.PublicChannel) {
+func PrintChannels(ctx context.Context, client *telegram.Client, log *zap.Logger, ch publicchannel.PublicChannel) {
 	// Получаем историю постов канала.
 	posts, err := client.API().MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
 		Peer: &tg.InputPeerChannel{

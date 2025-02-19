@@ -1,4 +1,4 @@
-package Filestorage
+package filestorage
 
 import (
 	"context"
@@ -26,5 +26,5 @@ func (fs *FileStorage) LoadSession(ctx context.Context) ([]byte, error) {
 }
 
 func (fs *FileStorage) StoreSession(ctx context.Context, data []byte) error {
-	return os.WriteFile(fs.filename, data, 0600)
+	return os.WriteFile(fs.filename, data, 0o600)
 }
