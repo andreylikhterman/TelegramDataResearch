@@ -1,4 +1,4 @@
-package filestorage
+package domain
 
 import (
 	"context"
@@ -15,7 +15,7 @@ func NewFileStorage(filename string) *FileStorage {
 	return &FileStorage{filename: filename}
 }
 
-func (fs *FileStorage) LoadSession(ctx context.Context) ([]byte, error) {
+func (fs *FileStorage) LoadSession(_ context.Context) ([]byte, error) {
 	data, err := os.ReadFile(fs.filename)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -28,6 +28,6 @@ func (fs *FileStorage) LoadSession(ctx context.Context) ([]byte, error) {
 	return data, nil
 }
 
-func (fs *FileStorage) StoreSession(ctx context.Context, data []byte) error {
+func (fs *FileStorage) StoreSession(_ context.Context, data []byte) error {
 	return os.WriteFile(fs.filename, data, 0o600)
 }

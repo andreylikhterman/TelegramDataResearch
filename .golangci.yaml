@@ -33,6 +33,7 @@ linters:
     - typecheck
     - unconvert
     - unparam
+    - unused
     - whitespace
     - asciicheck
     - gocognit

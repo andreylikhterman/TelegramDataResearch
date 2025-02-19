@@ -5,14 +5,16 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/andreylikhterman/TelegramDataResearch/internal/application/runresearch"
+	"github.com/andreylikhterman/TelegramDataResearch/internal/application"
 )
 
 func main() {
+	app := application.NewTelegramDataResearch()
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	if err := runresearch.RunResearch(ctx); err != nil {
+	if err := app.Run(ctx); err != nil {
 		panic(err)
 	}
 }
