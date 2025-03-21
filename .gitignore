@@ -25,4 +25,7 @@ go.work.sum
 # env file
 *.env
 
+# session file
+session*.json
+
 bin

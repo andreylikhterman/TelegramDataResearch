@@ -48,6 +48,10 @@ func (l *Logger) Fatal(msg string, fields ...zap.Field) {
 	l.Logger.Fatal(msg, fields...)
 }
 
+func (l *Logger) Error(msg string, fields ...zap.Field) {
+	l.Logger.Error(msg, fields...)
+}
+
 func (l *Logger) Sync() error {
 	return l.Logger.Sync()
 }

@@ -149,6 +149,41 @@ func (t *TelegramDataResearch) research(numOfAccount int) func(context.Context) 
 			return errors.Wrap(err, "get updates state")
 		}
 
+		channels, err := FetchChannelDataByNames(ctx, t.clients[numOfAccount], []string{"technodeus2023"})
+		if err != nil {
+			t.logger.Error("Ошибка получения данных о каналах " + "error" + err.Error())
+			return err
+		}
+
+		for _, ch := range channels {
+			// Приводим DiscussionPeer к *tg.InputPeerChannel
+			peer, ok := ch.DiscussionPeer.(*tg.InputPeerChannel)
+			if !ok {
+				t.logger.Info("Пропускаем канал: нет привязанного чата " + "title" + ch.Title)
+				continue
+			}
+
+			// Проверяем, подписан ли пользователь уже на чат
+			_, err := t.clients[numOfAccount].API().ChannelsGetParticipant(ctx, &tg.ChannelsGetParticipantRequest{
+				Channel: &tg.InputChannel{
+					ChannelID:  peer.ChannelID,
+					AccessHash: peer.AccessHash,
+				},
+				Participant: &tg.InputPeerSelf{},
+			})
+			if err == nil {
+				t.logger.Info("Уже подписан на title " + ch.Title)
+				continue
+			}
+
+			// Подписываемся на чат, если еще не подписаны
+			err = SubscribeToDiscussionChats(ctx, t.clients[numOfAccount], []domain.PublicChannel{ch})
+			if err != nil {
+				t.logger.Error("Ошибка при подписке на чат " + "title" + ch.Title + err.Error())
+			} else {
+				t.logger.Info("Успешно подписались на чат " + "title" + ch.Title)
+			}
+		}
 		// Запуск менеджера обновлений
 		return t.gaps[numOfAccount].Run(ctx, t.clients[numOfAccount].API(), user.ID, updates.AuthOptions{
 			OnStart: func(ctx context.Context) {
