@@ -1,0 +1,16 @@
+
+{"level":"info","time":"2025-03-21T12:52:50.407+0300","logger":"client.conn.mtproto.rpc","caller":"rpc/engine.go:271","msg":"Close called","v":"v0.120.0","conn_id":0,"dc_id":2}
+{"level":"info","time":"2025-03-21T12:52:50.408+0300","logger":"client","caller":"telegram/connect.go:187","msg":"Closed","v":"v0.120.0"}
+{"level":"info","time":"2025-03-21T12:52:56.242+0300","logger":"client.conn.mtproto.rpc","caller":"rpc/engine.go:42","msg":"Initialized","v":"v0.120.0","conn_id":0,"dc_id":2,"retry_interval":5,"max_retries":5}
+{"level":"info","time":"2025-03-21T12:52:56.242+0300","logger":"client","caller":"telegram/connect.go:137","msg":"Starting","v":"v0.120.0"}
+{"level":"info","time":"2025-03-21T12:52:56.243+0300","logger":"client","caller":"telegram/session.go:46","msg":"Connection restored from state","v":"v0.120.0","addr":"","key_id":"eb5f793fcc22ad0e"}
+{"level":"info","time":"2025-03-21T12:52:56.243+0300","logger":"client.conn.mtproto.rpc","caller":"rpc/engine.go:42","msg":"Initialized","v":"v0.120.0","conn_id":0,"dc_id":2,"retry_interval":5,"max_retries":5}
+{"level":"info","time":"2025-03-21T12:52:56.244+0300","logger":"client.conn.mtproto","caller":"mtproto/connect.go:44","msg":"Key already exists","v":"v0.120.0","conn_id":0,"dc_id":2}
+{"level":"info","time":"2025-03-21T12:52:56.643+0300","logger":"client.conn","caller":"manager/conn.go:82","msg":"SessionInit","v":"v0.120.0","conn_id":0,"dc_id":2}
+{"level":"info","time":"2025-03-21T12:52:56.725+0300","logger":"client","caller":"telegram/connect.go:42","msg":"Got self","v":"v0.120.0","username":""}
+{"level":"info","time":"2025-03-21T12:52:57.300+0300","caller":"logger/logger.go:44","msg":"Gaps started"}
+{"level":"info","time":"2025-03-21T12:53:11.572+0300","caller":"application/handlers.go:64","msg":"New message","text":"Вот \"пробиваются \" в депутаты эти неадекватные сволочи, а страна должна страдать от их решений и законов😡","id":413605,"post_id":412967,"user_id":681630758,"sender":"Fanya49","channel_id":2319637194,"channel":"Не Москва чат"}
+{"level":"info","time":"2025-03-21T12:53:11.572+0300","caller":"application/handlers.go:64","msg":"New message","text":"Сделай 2000$ за месяц, легко и без вложений","id":413606,"post_id":0,"user_id":7814071705,"sender":"UQfxmI","channel_id":2319637194,"channel":"Не Москва чат"}
+{"level":"info","time":"2025-03-21T12:53:26.392+0300","caller":"application/handlers.go:64","msg":"New message","text":"Какой вопрос задать?","id":5062890,"post_id":5062887,"user_id":7570368667,"sender":"Oliver_Alvarado52J","channel_id":1861451231,"channel":"Москва Live Chat"}
+{"level":"info","time":"2025-03-21T12:53:36.691+0300","logger":"client.conn.mtproto.rpc","caller":"rpc/engine.go:271","msg":"Close called","v":"v0.120.0","conn_id":0,"dc_id":2}
+{"level":"info","time":"2025-03-21T12:53:36.692+0300","logger":"client","caller":"telegram/connect.go:187","msg":"Closed","v":"v0.120.0"}

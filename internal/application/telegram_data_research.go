@@ -2,7 +2,6 @@ package application
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/andreylikhterman/TelegramDataResearch/internal/domain"
@@ -15,7 +14,6 @@ import (
 	"github.com/gotd/td/telegram/updates"
 	"github.com/gotd/td/telegram/updates/hook"
 	"github.com/gotd/td/tg"
-	"go.uber.org/zap"
 )
 
 type TelegramDataResearch struct {
@@ -25,255 +23,92 @@ type TelegramDataResearch struct {
 	gaps   *updates.Manager
 }
 
-func GetUser(ctx context.Context, message tg.NotEmptyMessage, e tg.Entities, client *telegram.Client) (int, string) {
-	fromPeer, ok := message.GetFromID()
-	if !ok {
-		return 0, ""
-	}
-
-	// Обрабатываем только сообщения от пользователей
-	userPeer, ok := fromPeer.(*tg.PeerUser)
-	if !ok {
-		return 0, ""
-	}
-
-	// Получаем информацию о пользователе
-	var username string
-	if user, exists := e.Users[userPeer.UserID]; exists {
-		username = user.Username
-		if username == "" {
-			username = fmt.Sprintf("user%d", userPeer.UserID)
-		}
-	} else {
-		// Если пользователя нет в сущностях, делаем запрос к API
-		users, err := client.API().UsersGetUsers(ctx, []tg.InputUserClass{
-			&tg.InputUser{UserID: userPeer.UserID},
-		})
-
-		if err == nil && len(users) > 0 {
-			if fullUser, ok := users[0].(*tg.User); ok {
-				username = fullUser.Username
-				if username == "" {
-					username = fmt.Sprintf("user%d", userPeer.UserID)
-				}
-				e.Users[userPeer.UserID] = fullUser // Кэшируем результат
-			}
-		}
-	}
-	return int(userPeer.UserID), username
-}
-
 func NewTelegramDataResearch() *TelegramDataResearch {
-	// 1. Настройка логгера
-	myLogger := logger.New()
+	// Инициализация логгера
+	lg := logger.New()
 
-	// 2. Инициализация системы обработки обновлений
+	// Настройка обработчика обновлений
 	dispatcher := tg.NewUpdateDispatcher()
 	gaps := updates.New(updates.Config{
 		Handler: dispatcher,
-		Logger:  myLogger.Named("updates"),
+		Logger:  lg.Named("updates").Logger,
 	})
 
-	// 3. Настройка аутентификации
-	authFlow := auth.NewFlow(
-		examples.Terminal{},
-		auth.SendCodeOptions{},
-	)
+	// Настройка аутентификации через терминал
+	authFlow := auth.NewFlow(examples.Terminal{}, auth.SendCodeOptions{})
 
-	// 4. Хранилище сессии
+	// Хранилище сессии
 	sessionStorage := domain.NewFileStorage("session.json")
 
-	// 5. Чтение переменных окружения
-	envReader := reader.NewEnvReader()
-	apiIDstr, exists := envReader.GetEnv("TELEGRAM_API_ID")
+	// Чтение API ID и Hash из переменных окружения
+	apiID, apiHash := getCredentials(reader.NewEnvReader(), lg)
 
-	if !exists {
-		myLogger.Fatal("TELEGRAM_API_ID not found")
-	}
-
-	apiID, isInt := strconv.Atoi(apiIDstr)
-	if isInt != nil {
-		myLogger.Fatal("TELEGRAM_API_ID is not integer")
-	}
-
-	apiHash, exists := envReader.GetEnv("TELEGRAM_API_HASH")
-	if !exists {
-		myLogger.Fatal("TELEGRAM_API_HASH not found")
-	}
-
-	// 6. Создание Telegram клиента
-	client := telegram.NewClient(
-		apiID,   // Ваш API ID из Telegram
-		apiHash, // Ваш API Hash из Telegram
-		telegram.Options{
-			Logger:         myLogger.Named("client"),
-			UpdateHandler:  gaps,
-			SessionStorage: sessionStorage,
-			Middlewares: []telegram.Middleware{
-				hook.UpdateHook(gaps.Handle),
-			},
-		},
-	)
-
-	dispatcher.OnNewMessage(func(ctx context.Context, e tg.Entities, u *tg.UpdateNewMessage) error {
-		message, ok := u.Message.AsNotEmpty()
-		if !ok {
-			return nil
-		}
-
-		// Извлекаем Peer отправителя
-		fromPeer, ok := message.GetFromID()
-		if !ok {
-			return nil
-		}
-
-		// Обрабатываем только сообщения от пользователей
-		userPeer, ok := fromPeer.(*tg.PeerUser)
-		if !ok {
-			return nil
-		}
-
-		// Получаем информацию о пользователе
-		var username string
-		if user, exists := e.Users[userPeer.UserID]; exists {
-			username = user.Username
-			if username == "" {
-				username = fmt.Sprintf("user%d", userPeer.UserID)
-			}
-		} else {
-			// Если пользователя нет в сущностях, делаем запрос к API
-			users, err := client.API().UsersGetUsers(ctx, []tg.InputUserClass{
-				&tg.InputUser{UserID: userPeer.UserID},
-			})
-
-			if err == nil && len(users) > 0 {
-				if fullUser, ok := users[0].(*tg.User); ok {
-					username = fullUser.Username
-					if username == "" {
-						username = fmt.Sprintf("user%d", userPeer.UserID)
-					}
-					e.Users[userPeer.UserID] = fullUser // Кэшируем результат
-				}
-			}
-		}
-
-		myLogger.Logger.Info("New message",
-			zap.String("text", message.(*tg.Message).GetMessage()),
-			zap.String("sender", username),
-			zap.Int64("id", userPeer.UserID),
-		)
-		return nil
+	// Создание Telegram-клиента
+	client := telegram.NewClient(apiID, apiHash, telegram.Options{
+		Logger:         lg.Named("client").Logger,
+		UpdateHandler:  gaps,
+		SessionStorage: sessionStorage,
+		Middlewares:    []telegram.Middleware{hook.UpdateHook(gaps.Handle)},
 	})
 
-	dispatcher.OnNewChannelMessage(func(ctx context.Context, e tg.Entities, u *tg.UpdateNewChannelMessage) error {
-		message, ok := u.Message.AsNotEmpty()
-		if !ok {
-			fmt.Println("a")
-			return nil
-		}
-
-		channelPeer, ok := message.GetPeerID().(*tg.PeerChannel)
-		if !ok {
-			fmt.Println("aa")
-			return nil
-		}
-
-		fmt.Println(channelPeer.ChannelID)
-
-		var channelName string
-		if channel, exists := e.Channels[channelPeer.ChannelID]; exists {
-			channelName = channel.Title
-			if channelName == "" {
-				channelName = fmt.Sprintf("channel%d", channelPeer.ChannelID)
-			}
-		} else {
-			// Если пользователя нет в сущностях, делаем запрос к API
-			channels, err := client.API().ChannelsGetChannels(ctx, []tg.InputChannelClass{
-				&tg.InputChannel{ChannelID: channelPeer.ChannelID},
-			})
-
-			if err == nil && len(channels.GetChats()) > 0 {
-				if channel, ok := channels.GetChats()[0].(*tg.Channel); ok {
-					channelName = channel.Title
-					if channelName == "" {
-						channelName = fmt.Sprintf("channel%d", channelPeer.ChannelID)
-					}
-					e.Channels[channelPeer.ChannelID] = channel // Кэшируем результат
-				}
-			}
-		}
-
-		if message.GetPost() {
-			myLogger.Logger.Info("New post",
-				zap.String("text", message.(*tg.Message).GetMessage()),
-				zap.String("channel", channelName),
-			)
-		} else {
-			user_id, username := GetUser(ctx, message, e, client)
-
-			var comment string
-			var comment_id int
-			var post_id int
-			information, ok := message.(*tg.Message)
-			if !ok {
-				comment = "false"
-			} else {
-				comment = information.GetMessage()
-				comment_id = information.GetID()
-				post, _ := information.ReplyTo.(*tg.MessageReplyHeader)
-				post_id, ok = post.GetReplyToTopID()
-			}
-			myLogger.Logger.Info("New message",
-				zap.String("text", comment),
-				zap.Int("id", comment_id),
-				zap.Int("post_id", post_id),
-				zap.Int("user_id", user_id),
-				zap.String("sender", username),
-				zap.String("channel", channelName),
-			)
-		}
-
-		return nil
-	})
+	// Регистрация обработчиков обновлений
+	registerHandlers(&dispatcher, client, lg)
 
 	return &TelegramDataResearch{
 		client: client,
 		auth:   &authFlow,
-		logger: myLogger,
+		logger: lg,
 		gaps:   gaps,
 	}
 }
 
 func (t *TelegramDataResearch) Run(ctx context.Context) error {
 	defer func() { _ = t.logger.Sync() }()
-
-	err := t.client.Run(ctx, t.research())
-
-	return err
+	return t.client.Run(ctx, t.research())
 }
 
 func (t *TelegramDataResearch) research() func(context.Context) error {
 	return func(ctx context.Context) error {
-		// 1. Аутентификация
+		// Аутентификация, если необходимо
 		if err := t.client.Auth().IfNecessary(ctx, *t.auth); err != nil {
 			return errors.Wrap(err, "auth")
 		}
 
+		// Получение информации о текущем пользователе
 		user, err := t.client.Self(ctx)
 		if err != nil {
 			return errors.Wrap(err, "call self")
 		}
 
-		// Важно: активируем получение обновлений
-		_, err = t.client.API().UpdatesGetState(ctx)
-		if err != nil {
+		// Получение состояния обновлений
+		if _, err = t.client.API().UpdatesGetState(ctx); err != nil {
 			return errors.Wrap(err, "get updates state")
 		}
 
+		// Запуск менеджера обновлений
 		return t.gaps.Run(ctx, t.client.API(), user.ID, updates.AuthOptions{
 			OnStart: func(ctx context.Context) {
 				t.logger.Info("Gaps started")
 			},
 		})
 	}
+}
+
+func getCredentials(envReader *reader.EnvReader, lg *logger.Logger) (int, string) {
+	apiIDStr, exists := envReader.GetEnv("TELEGRAM_API_ID")
+	if !exists {
+		lg.Fatal("TELEGRAM_API_ID not found")
+	}
+
+	apiID, err := strconv.Atoi(apiIDStr)
+	if err != nil {
+		lg.Fatal("TELEGRAM_API_ID is not integer")
+	}
+
+	apiHash, exists := envReader.GetEnv("TELEGRAM_API_HASH")
+	if !exists {
+		lg.Fatal("TELEGRAM_API_HASH not found")
+	}
+
+	return apiID, apiHash
 }

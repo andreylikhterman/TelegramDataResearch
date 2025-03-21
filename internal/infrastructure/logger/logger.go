@@ -1,6 +1,8 @@
 package logger
 
 import (
+	"os"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -10,32 +12,42 @@ type Logger struct {
 }
 
 func New() *Logger {
-	logger, _ := zap.NewDevelopment(
-		zap.IncreaseLevel(zapcore.InfoLevel),  // Уровень логирования Info и выше
-		zap.AddStacktrace(zapcore.FatalLevel), // Вывод стека только для Fatal
+	// Открываем файл для записи логов
+	logFile, err := os.OpenFile("app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		panic("failed to open log file: " + err.Error())
+	}
+
+	// Настройка уровня логирования и формата
+	encoderCfg := zap.NewProductionEncoderConfig()
+	encoderCfg.EncodeTime = zapcore.ISO8601TimeEncoder
+	encoderCfg.LevelKey = "level"
+	encoderCfg.TimeKey = "time"
+
+	// Создаем ядро для записи в файл
+	fileCore := zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderCfg),
+		zapcore.AddSync(logFile),
+		zapcore.InfoLevel,
 	)
 
-	return &Logger{
-		Logger: logger,
-	}
+	// Создаем логгер
+	logger := zap.New(fileCore, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel))
+	return &Logger{Logger: logger}
+}
+
+func (l *Logger) Named(name string) *Logger {
+	return &Logger{Logger: l.Logger.Named(name)}
+}
+
+func (l *Logger) Info(msg string, fields ...zap.Field) {
+	l.Logger.Info(msg, fields...)
+}
+
+func (l *Logger) Fatal(msg string, fields ...zap.Field) {
+	l.Logger.Fatal(msg, fields...)
 }
 
 func (l *Logger) Sync() error {
 	return l.Logger.Sync()
-}
-
-func (l *Logger) Named(name string) *zap.Logger {
-	return l.Logger.Named(name)
-}
-
-func (l *Logger) Fatal(msg string) {
-	l.Logger.Fatal(msg)
-}
-
-func (l *Logger) Error(msg string) {
-	l.Logger.Error(msg)
-}
-
-func (l *Logger) Info(msg string) {
-	l.Logger.Info(msg)
 }
