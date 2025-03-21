@@ -4,39 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/andreylikhterman/TelegramDataResearch/internal/domain"
 	"github.com/andreylikhterman/TelegramDataResearch/internal/infrastructure/logger"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
-	"go.uber.org/zap"
 )
 
-func registerHandlers(dispatcher *tg.UpdateDispatcher, client *telegram.Client, lg *logger.Logger) {
-	dispatcher.OnNewMessage(handleNewMessage(client, lg))
-	dispatcher.OnNewChannelMessage(handleNewChannelMessage(client, lg))
+func registerHandlers(dispatcher *tg.UpdateDispatcher, client *telegram.Client, ch_posts chan domain.Post, ch_messages chan domain.Message, lg *logger.Logger) {
+	dispatcher.OnNewChannelMessage(handleNewChannelMessage(client, ch_posts, ch_messages, lg))
 }
 
-func handleNewMessage(client *telegram.Client, lg *logger.Logger) func(context.Context, tg.Entities, *tg.UpdateNewMessage) error {
-	return func(ctx context.Context, e tg.Entities, u *tg.UpdateNewMessage) error {
-		message, ok := u.Message.AsNotEmpty()
-		if !ok {
-			return nil
-		}
-
-		userID, username := GetUser(ctx, message, e, client)
-		if userID == 0 {
-			return nil
-		}
-
-		lg.Logger.Info("New message",
-			zap.String("text", message.(*tg.Message).GetMessage()),
-			zap.String("sender", username),
-			zap.Int("id", userID),
-		)
-		return nil
-	}
-}
-
-func handleNewChannelMessage(client *telegram.Client, lg *logger.Logger) func(context.Context, tg.Entities, *tg.UpdateNewChannelMessage) error {
+func handleNewChannelMessage(client *telegram.Client, ch_posts chan domain.Post, ch_messages chan domain.Message, lg *logger.Logger) func(context.Context, tg.Entities, *tg.UpdateNewChannelMessage) error {
 	return func(ctx context.Context, e tg.Entities, u *tg.UpdateNewChannelMessage) error {
 		message, ok := u.Message.AsNotEmpty()
 		if !ok {
@@ -54,22 +32,26 @@ func handleNewChannelMessage(client *telegram.Client, lg *logger.Logger) func(co
 		comment, commentID, postID := extractMessageDetails(message)
 
 		if userID == 0 {
-			lg.Logger.Info("New post",
-				zap.String("text", comment),
-				zap.Int("post_id", commentID),
-				zap.Int64("channel_id", channelPeer.ChannelID),
-				zap.String("channel", channelName),
-			)
+			/*lg.Logger.Info("New post",
+			zap.String("text", comment),
+			zap.Int("post_id", commentID),
+			zap.Int64("channel_id", channelPeer.ChannelID),
+			zap.String("channel", channelName),
+			)*/
+			ch_posts <- domain.Post{Text: comment, Post_id: commentID, Channel_id: channelPeer.ChannelID,
+				Channel: channelName}
 		} else {
-			lg.Logger.Info("New message",
-				zap.String("text", comment),
-				zap.Int("id", commentID),
-				zap.Int("post_id", postID),
-				zap.Int("user_id", userID),
-				zap.String("sender", username),
-				zap.Int64("channel_id", channelPeer.ChannelID),
-				zap.String("channel", channelName),
-			)
+			/*lg.Logger.Info("New message",
+			zap.String("text", comment),
+			zap.Int("id", commentID),
+			zap.Int("post_id", postID),
+			zap.Int("user_id", userID),
+			zap.String("sender", username),
+			zap.Int64("channel_id", channelPeer.ChannelID),
+			zap.String("channel", channelName),
+			)*/
+			ch_messages <- domain.Message{Text: comment, Comment_id: commentID, Post_id: postID, User_id: userID,
+				Channel_name: channelName, User_name: username, Channel_id: channelPeer.ChannelID}
 		}
 		return nil
 	}

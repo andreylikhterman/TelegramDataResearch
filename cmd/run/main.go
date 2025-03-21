@@ -10,7 +10,6 @@ import (
 
 func main() {
 	app := application.NewTelegramDataResearch()
-
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
