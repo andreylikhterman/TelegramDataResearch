@@ -32,24 +32,9 @@ func handleNewChannelMessage(client *telegram.Client, ch_posts chan domain.Post,
 		comment, commentID, postID := extractMessageDetails(message)
 
 		if userID == 0 {
-			/*lg.Logger.Info("New post",
-			zap.String("text", comment),
-			zap.Int("post_id", commentID),
-			zap.Int64("channel_id", channelPeer.ChannelID),
-			zap.String("channel", channelName),
-			)*/
 			ch_posts <- domain.Post{Text: comment, Post_id: commentID, Channel_id: channelPeer.ChannelID,
 				Channel: channelName}
 		} else {
-			/*lg.Logger.Info("New message",
-			zap.String("text", comment),
-			zap.Int("id", commentID),
-			zap.Int("post_id", postID),
-			zap.Int("user_id", userID),
-			zap.String("sender", username),
-			zap.Int64("channel_id", channelPeer.ChannelID),
-			zap.String("channel", channelName),
-			)*/
 			ch_messages <- domain.Message{Text: comment, Comment_id: commentID, Post_id: postID, User_id: userID,
 				Channel_name: channelName, User_name: username, Channel_id: channelPeer.ChannelID}
 		}

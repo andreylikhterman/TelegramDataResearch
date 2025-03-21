@@ -2,7 +2,6 @@ package application
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"sync"
 
@@ -94,10 +93,8 @@ func (t *TelegramDataResearch) Run(ctx context.Context) error {
 	}
 	go func() {
 		for {
-			fmt.Println("waiting for messages")
 			for len(*t.messages_chan) < 10 {
 			}
-			fmt.Println("Читатель начал чтение 10 сообщений:")
 			for i := 0; i < 10; i++ {
 				msg := <-*t.messages_chan
 				t.logger.Logger.Info("New message",
@@ -110,16 +107,13 @@ func (t *TelegramDataResearch) Run(ctx context.Context) error {
 					zap.String("channel", msg.Channel_name),
 				)
 			}
-			fmt.Println("Чтение 10 сообщений завершено.")
 		}
 	}()
 	go func() {
 		for {
-			fmt.Println("waiting for posts")
 			for len(*t.posts_chan) < 10 {
 			}
 
-			fmt.Println("Читатель начал чтение 10 постов:")
 			for i := 0; i < 10; i++ {
 				msg := <-*t.posts_chan
 				t.logger.Logger.Info("New post",
@@ -129,7 +123,6 @@ func (t *TelegramDataResearch) Run(ctx context.Context) error {
 					zap.String("channel", msg.Channel),
 				)
 			}
-			fmt.Println("Чтение 10 постов завершено.")
 		}
 	}()
 	wg.Wait()
