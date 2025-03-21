@@ -25,6 +25,44 @@ type TelegramDataResearch struct {
 	gaps   *updates.Manager
 }
 
+func GetUser(ctx context.Context, message tg.NotEmptyMessage, e tg.Entities, client *telegram.Client) (int, string) {
+	fromPeer, ok := message.GetFromID()
+	if !ok {
+		return 0, ""
+	}
+
+	// Обрабатываем только сообщения от пользователей
+	userPeer, ok := fromPeer.(*tg.PeerUser)
+	if !ok {
+		return 0, ""
+	}
+
+	// Получаем информацию о пользователе
+	var username string
+	if user, exists := e.Users[userPeer.UserID]; exists {
+		username = user.Username
+		if username == "" {
+			username = fmt.Sprintf("user%d", userPeer.UserID)
+		}
+	} else {
+		// Если пользователя нет в сущностях, делаем запрос к API
+		users, err := client.API().UsersGetUsers(ctx, []tg.InputUserClass{
+			&tg.InputUser{UserID: userPeer.UserID},
+		})
+
+		if err == nil && len(users) > 0 {
+			if fullUser, ok := users[0].(*tg.User); ok {
+				username = fullUser.Username
+				if username == "" {
+					username = fmt.Sprintf("user%d", userPeer.UserID)
+				}
+				e.Users[userPeer.UserID] = fullUser // Кэшируем результат
+			}
+		}
+	}
+	return int(userPeer.UserID), username
+}
+
 func NewTelegramDataResearch() *TelegramDataResearch {
 	// 1. Настройка логгера
 	myLogger := logger.New()
@@ -171,46 +209,28 @@ func NewTelegramDataResearch() *TelegramDataResearch {
 				zap.String("channel", channelName),
 			)
 		} else {
-			fromPeer, ok := message.GetFromID()
+			user_id, username := GetUser(ctx, message, e, client)
+
+			var comment string
+			var comment_id int
+			var post_id int
+			information, ok := message.(*tg.Message)
 			if !ok {
-				fmt.Println("aaa")
-				return nil
+				comment = "false"
 			} else {
-				userPeer, ok := fromPeer.(*tg.PeerUser)
-				if !ok {
-					fmt.Println("aaaa")
-					return nil
-				}
-
-				// Получаем информацию о пользователе
-				var username string
-				if user, exists := e.Users[userPeer.UserID]; exists {
-					username = user.Username
-					if username == "" {
-						username = fmt.Sprintf("user%d", userPeer.UserID)
-					}
-				} else {
-					// Если пользователя нет в сущностях, делаем запрос к API
-					users, err := client.API().UsersGetUsers(ctx, []tg.InputUserClass{
-						&tg.InputUser{UserID: userPeer.UserID},
-					})
-
-					if err == nil && len(users) > 0 {
-						if fullUser, ok := users[0].(*tg.User); ok {
-							username = fullUser.Username
-							if username == "" {
-								username = fmt.Sprintf("user%d", userPeer.UserID)
-							}
-							e.Users[userPeer.UserID] = fullUser // Кэшируем результат
-						}
-					}
-				}
-				myLogger.Logger.Info("New message",
-					zap.String("text", message.(*tg.Message).GetMessage()),
-					zap.String("sender", username),
-					zap.String("channel", channelName),
-				)
+				comment = information.GetMessage()
+				comment_id = information.GetID()
+				post, _ := information.ReplyTo.(*tg.MessageReplyHeader)
+				post_id, ok = post.GetReplyToTopID()
 			}
+			myLogger.Logger.Info("New message",
+				zap.String("text", comment),
+				zap.Int("id", comment_id),
+				zap.Int("post_id", post_id),
+				zap.Int("user_id", user_id),
+				zap.String("sender", username),
+				zap.String("channel", channelName),
+			)
 		}
 
 		return nil
