@@ -6,6 +6,7 @@ import (
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
 	"log"
+	"time"
 )
 
 func SubscribeToDiscussionChats(ctx context.Context, client *telegram.Client, channels []domain.PublicChannel) error {
@@ -29,6 +30,7 @@ func SubscribeToDiscussionChats(ctx context.Context, client *telegram.Client, ch
 			continue
 		}
 		log.Printf("Вступили в чат обсуждений канала %s", ch.Title)
+		time.Sleep(5 * time.Second)
 	}
 
 	return nil

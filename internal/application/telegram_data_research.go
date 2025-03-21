@@ -84,11 +84,12 @@ func (t *TelegramDataResearch) Run(ctx context.Context) error {
 	defer func() { _ = t.logger.Sync() }()
 	var wg sync.WaitGroup
 	var err error
+	channels := []string{"technodeus2023", "cherevatstreams"}
 	for numOfAccount, client := range t.clients {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err = client.Run(ctx, t.research(numOfAccount))
+			err = client.Run(ctx, t.research(numOfAccount, channels))
 		}()
 	}
 	go func() {
@@ -131,7 +132,7 @@ func (t *TelegramDataResearch) Run(ctx context.Context) error {
 	return err
 }
 
-func (t *TelegramDataResearch) research(numOfAccount int) func(context.Context) error {
+func (t *TelegramDataResearch) research(numOfAccount int, Channels []string) func(context.Context) error {
 	return func(ctx context.Context) error {
 		// Аутентификация, если необходимо
 		t.mtx.Lock()
@@ -148,8 +149,11 @@ func (t *TelegramDataResearch) research(numOfAccount int) func(context.Context) 
 		if _, err = t.clients[numOfAccount].API().UpdatesGetState(ctx); err != nil {
 			return errors.Wrap(err, "get updates state")
 		}
-
-		channels, err := FetchChannelDataByNames(ctx, t.clients[numOfAccount], []string{"technodeus2023"})
+		how_many_chats := len(Channels) / len(t.clients)
+		if how_many_chats > 500 {
+			how_many_chats = 500
+		}
+		channels, err := FetchChannelDataByNames(ctx, t.clients[numOfAccount], Channels[(how_many_chats*numOfAccount):(how_many_chats*(numOfAccount+1))])
 		if err != nil {
 			t.logger.Error("Ошибка получения данных о каналах " + "error" + err.Error())
 			return err
