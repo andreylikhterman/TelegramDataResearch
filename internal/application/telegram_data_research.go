@@ -2,8 +2,10 @@ package application
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/andreylikhterman/TelegramDataResearch/internal/domain"
 	"github.com/andreylikhterman/TelegramDataResearch/internal/infrastructure/logger"
@@ -84,14 +86,22 @@ func (t *TelegramDataResearch) Run(ctx context.Context) error {
 	defer func() { _ = t.logger.Sync() }()
 	var wg sync.WaitGroup
 	var err error
-	channels := []string{"technodeus2023", "cherevatstreams"}
+	channels := []string{"technodeus2023", "cherevatstreams", "shot_shot", "moscowach", "pravdadirty",
+		"topor", "nexta_live", "Ateobreaking", "ru2ch", "moscow",
+		"moscowachplus", "rt_russian", "RhymesMorgen", "smi_rf_moskva", "lentachtrue",
+		"kosti", "petrovtel", "mashmoyka", "milinfolive", "live_piter",
+		"nemorgenshtern", "chp_crimea", "kazancity", "spbtoday", "chtddd",
+		"Petya_perviy", "oldlentach", "e1_news", "krd_tipich_ru", "region116_kazan",
+		"svodka25", "tsargradtv", "piterach", "SuperRu", "kazan",
+		"tvrain", "kursk_tipich", "chp_sochi", "chp_kavkaz", "rosich_russia"}
 	for numOfAccount, client := range t.clients {
 		wg.Add(1)
-		go func() {
+		go func(number int) {
 			defer wg.Done()
-			err = client.Run(ctx, t.research(numOfAccount, channels))
-		}()
+			err = client.Run(ctx, t.research(number, channels))
+		}(numOfAccount)
 	}
+
 	go func() {
 		for {
 			for len(*t.messages_chan) < 10 {
@@ -150,6 +160,7 @@ func (t *TelegramDataResearch) research(numOfAccount int, Channels []string) fun
 			return errors.Wrap(err, "get updates state")
 		}
 		how_many_chats := len(Channels) / len(t.clients)
+		fmt.Println(how_many_chats)
 		if how_many_chats > 500 {
 			how_many_chats = 500
 		}
@@ -158,12 +169,12 @@ func (t *TelegramDataResearch) research(numOfAccount int, Channels []string) fun
 			t.logger.Error("Ошибка получения данных о каналах " + "error" + err.Error())
 			return err
 		}
-
 		for _, ch := range channels {
 			// Приводим DiscussionPeer к *tg.InputPeerChannel
 			peer, ok := ch.DiscussionPeer.(*tg.InputPeerChannel)
 			if !ok {
 				t.logger.Info("Пропускаем канал: нет привязанного чата " + "title" + ch.Title)
+				time.Sleep(10 * time.Second)
 				continue
 			}
 
@@ -177,6 +188,7 @@ func (t *TelegramDataResearch) research(numOfAccount int, Channels []string) fun
 			})
 			if err == nil {
 				t.logger.Info("Уже подписан на title " + ch.Title)
+				time.Sleep(10 * time.Second)
 				continue
 			}
 
@@ -187,6 +199,7 @@ func (t *TelegramDataResearch) research(numOfAccount int, Channels []string) fun
 			} else {
 				t.logger.Info("Успешно подписались на чат " + "title" + ch.Title)
 			}
+			time.Sleep(10 * time.Second)
 		}
 		// Запуск менеджера обновлений
 		return t.gaps[numOfAccount].Run(ctx, t.clients[numOfAccount].API(), user.ID, updates.AuthOptions{
