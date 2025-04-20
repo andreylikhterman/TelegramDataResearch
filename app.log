@@ -1212,3 +1212,15 @@
 {"level":"info","time":"2025-03-22T00:26:27.078+0300","caller":"application/telegram_data_research.go:101","msg":"New message","text":"Ты че мать, е@бнулась что ли","id":416419,"post_id":416416,"user_id":7514320800,"sender":"no username","channel_id":2319637194,"channel":"Не Москва чат"}
 {"level":"info","time":"2025-03-22T00:26:27.078+0300","caller":"application/telegram_data_research.go:101","msg":"New message","text":"Замолчи","id":416420,"post_id":416406,"user_id":5168583055,"sender":"no username","channel_id":2319637194,"channel":"Не Москва чат"}
 {"level":"info","time":"2025-03-22T00:26:27.078+0300","caller":"application/telegram_data_research.go:101","msg":"New message","text":"где я стрелки перевел, еблан? сам доебался же","id":6305515,"post_id":6304137,"user_id":6014039229,"sender":"no username","channel_id":1715638997,"channel":"ТОПОР – чат"}
+{"level":"info","time":"2025-04-20T14:05:52.246+0300","logger":"client0.conn.mtproto.rpc","caller":"rpc/engine.go:42","msg":"Initialized","v":"v0.120.0","conn_id":0,"dc_id":2,"retry_interval":5,"max_retries":5}
+{"level":"info","time":"2025-04-20T14:05:52.249+0300","logger":"client0","caller":"telegram/connect.go:137","msg":"Starting","v":"v0.120.0"}
+{"level":"info","time":"2025-04-20T14:05:52.252+0300","logger":"client0","caller":"telegram/session.go:46","msg":"Connection restored from state","v":"v0.120.0","addr":"","key_id":"73f2c12c3f398bf8"}
+{"level":"info","time":"2025-04-20T14:05:52.252+0300","logger":"client0.conn.mtproto.rpc","caller":"rpc/engine.go:42","msg":"Initialized","v":"v0.120.0","conn_id":0,"dc_id":2,"retry_interval":5,"max_retries":5}
+{"level":"info","time":"2025-04-20T14:05:52.254+0300","logger":"client0.conn.mtproto","caller":"mtproto/connect.go:44","msg":"Key already exists","v":"v0.120.0","conn_id":0,"dc_id":2}
+{"level":"info","time":"2025-04-20T14:05:52.358+0300","logger":"client0.conn.mtproto","caller":"mtproto/salt.go:21","msg":"Salt updated","v":"v0.120.0","conn_id":0,"dc_id":2,"old":699385231471040301,"new":6214132880758043169}
+{"level":"info","time":"2025-04-20T14:05:52.358+0300","logger":"client0.conn.mtproto","caller":"mtproto/rpc.go:41","msg":"Retrying request after basMsgErr","v":"v0.120.0","conn_id":0,"dc_id":2,"msg_id":7495349944803257796}
+{"level":"info","time":"2025-04-20T14:05:52.409+0300","logger":"client0.conn","caller":"manager/conn.go:82","msg":"SessionInit","v":"v0.120.0","conn_id":0,"dc_id":2}
+{"level":"info","time":"2025-04-20T14:05:52.554+0300","logger":"client0","caller":"telegram/connect.go:42","msg":"Got self","v":"v0.120.0","username":"Vitaliy_sev"}
+{"level":"info","time":"2025-04-20T14:05:58.342+0300","caller":"logger/logger.go:56","msg":"Успешно подписались на чат titletechnodeus2023"}
+{"level":"info","time":"2025-04-20T14:06:03.555+0300","caller":"logger/logger.go:56","msg":"Успешно подписались на чат titlecherevatstreams"}
+{"level":"info","time":"2025-04-20T14:06:03.610+0300","caller":"logger/logger.go:56","msg":"Gaps started"}
