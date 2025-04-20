@@ -2,11 +2,12 @@ package application
 
 import (
 	"context"
+	"log"
+	"time"
+
 	"github.com/andreylikhterman/TelegramDataResearch/internal/domain"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
-	"log"
-	"time"
 )
 
 func SubscribeToDiscussionChats(ctx context.Context, client *telegram.Client, channels []domain.PublicChannel) error {
@@ -26,10 +27,8 @@ func SubscribeToDiscussionChats(ctx context.Context, client *telegram.Client, ch
 
 		_, err := api.ChannelsJoinChannel(ctx, inputChannel)
 		if err != nil {
-			log.Printf("Ошибка при вступлении в чат обсуждений для канала %s: %v", ch.Title, err)
 			continue
 		}
-		log.Printf("Вступили в чат обсуждений канала %s", ch.Title)
 		time.Sleep(5 * time.Second)
 	}
 

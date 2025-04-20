@@ -30,21 +30,21 @@ func New() *Logger {
 		panic("failed to open log file: " + err.Error())
 	}
 
-	// Настройка уровня логирования и формата
-	encoderCfg := zap.NewProductionEncoderConfig()
-	encoderCfg.EncodeTime = zapcore.ISO8601TimeEncoder
-	encoderCfg.LevelKey = "level"
-	encoderCfg.TimeKey = "time"
+	// Конфигурация кодировщика JSON (для файла)
+	fileEncoderConfig := zap.NewProductionEncoderConfig()
+	fileEncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
-	// Создаем ядро для записи в файл
-	fileCore := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderCfg),
-		zapcore.AddSync(logFile),
-		zapcore.InfoLevel,
-	)
+	// Создаем кастомные кодировщики
+	fileEncoder := zapcore.NewJSONEncoder(fileEncoderConfig)
+
+	// Создаем ядра логирования
+	fileCore := zapcore.NewCore(fileEncoder, zapcore.AddSync(logFile), zapcore.InfoLevel)
+
+	// Объединяем ядра логирования
+	core := zapcore.NewTee(fileCore)
 
 	// Создаем логгер
-	logger := zap.New(fileCore, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel))
+	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel))
 	return &Logger{Logger: logger}
 }
 
