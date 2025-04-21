@@ -35,6 +35,10 @@ import (
 //DB_NAME=yourdb
 //SSL_MODE=disableл
 
+type MyDB struct {
+	DB *sql.DB
+}
+
 func Connect() *sql.DB {
 	err := godotenv.Load()
 	if err != nil {

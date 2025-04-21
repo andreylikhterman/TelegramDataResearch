@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/andreylikhterman/TelegramDataResearch/internal/domain"
+	"github.com/andreylikhterman/TelegramDataResearch/internal/infrastructure/db"
 	"github.com/andreylikhterman/TelegramDataResearch/internal/infrastructure/logger"
 	"github.com/andreylikhterman/TelegramDataResearch/internal/infrastructure/reader"
 	"github.com/go-faster/errors"
@@ -28,14 +29,15 @@ type TelegramDataResearch struct {
 	messages_chan *chan domain.Message
 	posts_chan    *chan domain.Post
 	mtx           sync.Mutex
+	db            *db.MyDB
 }
 
 func NewTelegramDataResearch() *TelegramDataResearch {
 	// Инициализация логгера
 	lg := logger.New()
+	db := db.MyDB{DB: db.Connect()}
 
 	// Настройка обработчика обновлений
-
 	// Хранилище сессии
 
 	// Чтение API ID и Hash из переменных окружения
@@ -79,6 +81,7 @@ func NewTelegramDataResearch() *TelegramDataResearch {
 		posts_chan:    &ch_posts,
 		messages_chan: &ch_messages,
 		mtx:           sync.Mutex{},
+		db:            &db,
 	}
 }
 
@@ -103,11 +106,20 @@ func (t *TelegramDataResearch) Run(ctx context.Context) error {
 	}
 
 	go func() {
+		placeholders := make([]string, 10)
 		for {
 			for len(*t.messages_chan) < 10 {
 			}
+			args := make([]any, 0)
 			for i := 0; i < 10; i++ {
+				placeholders[i] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*7+1, i*7+2, i*7+3, i*7+4, i*7+5, i*7+6, i*7+7)
 				msg := <-*t.messages_chan
+				args = append(args, msg.Text, msg.Comment_id, msg.Post_id, msg.User_id,
+					msg.User_name, msg.Channel_name, msg.Channel_id)
+				go func(id int64, name string) {
+					t.db.InsertUser(id, name)
+				}(int64(msg.User_id), msg.User_name)
+
 				t.logger.Logger.Info("New message",
 					zap.String("text", msg.Text),
 					zap.Int("id", msg.Comment_id),
@@ -118,15 +130,20 @@ func (t *TelegramDataResearch) Run(ctx context.Context) error {
 					zap.String("channel", msg.Channel_name),
 				)
 			}
+			t.db.InsertMessage(placeholders, args)
 		}
 	}()
 	go func() {
+		placeholders := make([]string, 10)
+
 		for {
 			for len(*t.posts_chan) < 10 {
 			}
-
+			args := make([]any, 0)
 			for i := 0; i < 10; i++ {
+				placeholders[i] = fmt.Sprintf("($%d, $%d, $%d, $%d)", i*4+1, i*4+2, i*4+3, i*4+4)
 				msg := <-*t.posts_chan
+				args = append(args, msg.Text, msg.Post_id, msg.Channel_id, msg.Channel)
 				t.logger.Logger.Info("New post",
 					zap.String("text", msg.Text),
 					zap.Int("post_id", msg.Post_id),
@@ -134,6 +151,7 @@ func (t *TelegramDataResearch) Run(ctx context.Context) error {
 					zap.String("channel", msg.Channel),
 				)
 			}
+			t.db.InsertPost(placeholders, args)
 		}
 	}()
 	wg.Wait()
@@ -144,6 +162,7 @@ func (t *TelegramDataResearch) Run(ctx context.Context) error {
 
 func (t *TelegramDataResearch) research(numOfAccount int, Channels []string) func(context.Context) error {
 	return func(ctx context.Context) error {
+
 		// Аутентификация, если необходимо
 		t.mtx.Lock()
 		if err := t.clients[numOfAccount].Auth().IfNecessary(ctx, *t.auths[numOfAccount]); err != nil {
@@ -180,12 +199,14 @@ func (t *TelegramDataResearch) research(numOfAccount int, Channels []string) fun
 
 			// Проверяем, подписан ли пользователь уже на чат
 			_, err := t.clients[numOfAccount].API().ChannelsGetParticipant(ctx, &tg.ChannelsGetParticipantRequest{
+
 				Channel: &tg.InputChannel{
 					ChannelID:  peer.ChannelID,
 					AccessHash: peer.AccessHash,
 				},
 				Participant: &tg.InputPeerSelf{},
 			})
+			t.db.InsertChannel(ch.ID, ch.Title)
 			if err == nil {
 				t.logger.Info("Уже подписан на title " + ch.Title)
 				time.Sleep(10 * time.Second)
@@ -194,6 +215,7 @@ func (t *TelegramDataResearch) research(numOfAccount int, Channels []string) fun
 
 			// Подписываемся на чат, если еще не подписаны
 			err = SubscribeToDiscussionChats(ctx, t.clients[numOfAccount], []domain.PublicChannel{ch})
+
 			if err != nil {
 				t.logger.Error("Ошибка при подписке на чат " + "title" + ch.Title + err.Error())
 			} else {

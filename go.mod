@@ -7,6 +7,8 @@ require (
 	github.com/gotd/td v0.120.0
 	github.com/gotd/td/examples v0.0.0-20250214132255-0851cd982156
 	github.com/joho/godotenv v1.5.1
+	github.com/lib/pq v1.10.9
+	github.com/pressly/goose/v3 v3.24.2
 	go.uber.org/zap v1.27.0
 )
 
@@ -25,12 +27,10 @@ require (
 	github.com/gotd/ige v0.2.2 // indirect
 	github.com/gotd/neo v0.1.5 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
-	github.com/lib/pq v1.10.9 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/ogen-go/ogen v1.10.0 // indirect
-	github.com/pressly/goose/v3 v3.24.2 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect

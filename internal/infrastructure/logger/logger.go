@@ -1,10 +1,8 @@
 package logger
 
 import (
-	"log"
 	"os"
 
-	"github.com/andreylikhterman/TelegramDataResearch/internal/infrastructure/db"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -15,15 +13,6 @@ type Logger struct {
 }
 
 func New() *Logger {
-	bd := db.Connect()
-	_, err := bd.Exec(`
-    INSERT INTO channels (id, title, type, subscribers_counter)
-    VALUES ($1, $2, $3, $4)
-`, "tg_channel_123", "Технологии и код", "p", 4820)
-
-	if err != nil {
-		log.Fatalf("Failed to insert channel: %v", err)
-	}
 
 	logFile, err := os.OpenFile("app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {

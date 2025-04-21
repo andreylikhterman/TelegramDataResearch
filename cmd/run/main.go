@@ -17,8 +17,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	go monitorMemory()
-
+	//go monitorMemory()
 	if err := app.Run(ctx); err != nil {
 		panic(err)
 	}
