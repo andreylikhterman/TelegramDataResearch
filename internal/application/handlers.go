@@ -31,11 +31,11 @@ func handleNewChannelMessage(client *telegram.Client, ch_posts chan domain.Post,
 		comment, commentID, postID := extractMessageDetails(message)
 
 		if userID == 0 {
-			ch_posts <- domain.Post{Text: comment, Post_id: commentID, Channel_id: channelPeer.ChannelID,
+			ch_posts <- domain.Post{Text: comment, PostId: commentID, ChannelId: channelPeer.ChannelID,
 				Channel: channelName}
 		} else {
-			ch_messages <- domain.Message{Text: comment, Comment_id: commentID, Post_id: postID, User_id: userID,
-				Channel_name: channelName, User_name: username, Channel_id: channelPeer.ChannelID}
+			ch_messages <- domain.Message{Text: comment, CommentId: commentID, PostId: postID, UserId: userID,
+				ChannelName: channelName, UserName: username, ChannelId: channelPeer.ChannelID}
 		}
 		return nil
 	}

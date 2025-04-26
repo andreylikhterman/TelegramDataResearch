@@ -10,17 +10,18 @@ create table users (id bigint primary key, name text not null);
 
 create table posts (
     id serial primary key,
-    channel_id bigint not null,
+    channel_id bigint not null, --добавить reference, когда будут только нужные каналы.
     post_id_into_channel bigint not null,
     timestamp time not null,
     value text
 );
 
 create table comments (
-    id bigint primary key,
+    id serial primary key,
+    tg_id bigint not null,
     post_id bigint references posts (id),
     replied_to bigint not null,
-    user_id bigint not null,
+    user_id bigint not null references users (id),
     timestamp time not null,
     value text
 );

@@ -43,7 +43,7 @@ func NewTelegramDataResearch() *TelegramDataResearch {
 	// Чтение API ID и Hash из переменных окружения
 	ID, hash := getCredentials(reader.NewEnvReader(), lg)
 	numOfAccounts := getNum(reader.NewEnvReader(), lg)
-	ch_posts := make(chan domain.Post, 10)
+	ch_posts := make(chan domain.Post, 1)
 	ch_messages := make(chan domain.Message, 10)
 	var clients []*telegram.Client
 	var authFlows []*auth.Flow
@@ -86,6 +86,7 @@ func NewTelegramDataResearch() *TelegramDataResearch {
 }
 
 func (t *TelegramDataResearch) Run(ctx context.Context) error {
+	t.db.InsertZeroPostIfNotExists()
 	defer func() { _ = t.logger.Sync() }()
 	var wg sync.WaitGroup
 	var err error
@@ -106,48 +107,50 @@ func (t *TelegramDataResearch) Run(ctx context.Context) error {
 	}
 
 	go func() {
-		placeholders := make([]string, 10)
+		wg := &sync.WaitGroup{}
 		for {
 			for len(*t.messages_chan) < 10 {
 			}
 			args := make([]any, 0)
 			for i := 0; i < 10; i++ {
-				placeholders[i] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*7+1, i*7+2, i*7+3, i*7+4, i*7+5, i*7+6, i*7+7)
 				msg := <-*t.messages_chan
-				args = append(args, msg.Text, msg.Comment_id, msg.Post_id, msg.User_id,
-					msg.User_name, msg.Channel_name, msg.Channel_id)
+				args = append(args, msg.Text, msg.CommentId, msg.PostId, msg.UserId,
+					msg.UserName, msg.ChannelName, msg.ChannelId)
+				wg.Add(1)
 				go func(id int64, name string) {
 					t.db.InsertUser(id, name)
-				}(int64(msg.User_id), msg.User_name)
+					wg.Done()
+				}(int64(msg.UserId), msg.UserName)
 
 				t.logger.Logger.Info("New message",
 					zap.String("text", msg.Text),
-					zap.Int("id", msg.Comment_id),
-					zap.Int("post_id", msg.Post_id),
-					zap.Int("user_id", msg.User_id),
-					zap.String("sender", msg.User_name),
-					zap.Int64("channel_id", msg.Channel_id),
-					zap.String("channel", msg.Channel_name),
+					zap.Int("id", msg.CommentId),
+					zap.Int("post_id", msg.PostId),
+					zap.Int("user_id", msg.UserId),
+					zap.String("sender", msg.UserName),
+					zap.Int64("channel_id", msg.ChannelId),
+					zap.String("channel", msg.ChannelName),
 				)
 			}
-			t.db.InsertMessage(placeholders, args)
+			wg.Wait()
+			t.db.InsertMessage(args)
 		}
 	}()
 	go func() {
-		placeholders := make([]string, 10)
+		placeholders := make([]string, 1)
 
 		for {
-			for len(*t.posts_chan) < 10 {
+			for len(*t.posts_chan) < 1 {
 			}
 			args := make([]any, 0)
-			for i := 0; i < 10; i++ {
+			for i := 0; i < 1; i++ {
 				placeholders[i] = fmt.Sprintf("($%d, $%d, $%d, $%d)", i*4+1, i*4+2, i*4+3, i*4+4)
 				msg := <-*t.posts_chan
-				args = append(args, msg.Text, msg.Post_id, msg.Channel_id, msg.Channel)
+				args = append(args, msg.Text, msg.PostId, msg.ChannelId, msg.Channel)
 				t.logger.Logger.Info("New post",
 					zap.String("text", msg.Text),
-					zap.Int("post_id", msg.Post_id),
-					zap.Int64("channel_id", msg.Channel_id),
+					zap.Int("post_id", msg.PostId),
+					zap.Int64("channel_id", msg.ChannelId),
 					zap.String("channel", msg.Channel),
 				)
 			}
@@ -179,7 +182,6 @@ func (t *TelegramDataResearch) research(numOfAccount int, Channels []string) fun
 			return errors.Wrap(err, "get updates state")
 		}
 		how_many_chats := len(Channels) / len(t.clients)
-		fmt.Println(how_many_chats)
 		if how_many_chats > 500 {
 			how_many_chats = 500
 		}

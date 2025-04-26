@@ -28,11 +28,11 @@ func HandleMessage(ctx context.Context, newMessage *tg.Message, channelPost chan
 	comment, commentID, postID := extractMessageDetails(message)
 
 	if userID == 0 {
-		channelPost <- domain.Post{Text: comment, Post_id: commentID, Channel_id: channelPeer.ChannelID,
+		channelPost <- domain.Post{Text: comment, PostId: commentID, ChannelId: channelPeer.ChannelID,
 			Channel: channelName}
 	} else {
-		channelMessage <- domain.Message{Text: comment, Comment_id: commentID, Post_id: postID, User_id: userID,
-			Channel_name: channelName, User_name: username, Channel_id: channelPeer.ChannelID}
+		channelMessage <- domain.Message{Text: comment, CommentId: commentID, PostId: postID, UserId: userID,
+			ChannelName: channelName, UserName: username, ChannelId: channelPeer.ChannelID}
 	}
 	return nil
 }

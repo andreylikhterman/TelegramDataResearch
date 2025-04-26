@@ -1,8 +1,8 @@
 package domain
 
 type Post struct {
-	Text       string
-	Post_id    int
-	Channel_id int64
-	Channel    string
+	Text      string
+	PostId    int
+	ChannelId int64
+	Channel   string
 }
