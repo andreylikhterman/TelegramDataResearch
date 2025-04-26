@@ -67,7 +67,7 @@ func NewTelegramDataResearch() *TelegramDataResearch {
 		})
 		clients = append(clients, client)
 		res_gaps = append(res_gaps, gaps)
-		registerHandlers(&dispatcher, client, ch_posts, ch_messages, lg)
+		registerHandlers(&dispatcher, client, ch_posts, ch_messages)
 	}
 	// Создание Telegram-клиента
 

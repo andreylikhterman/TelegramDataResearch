@@ -5,16 +5,15 @@ import (
 	"fmt"
 
 	"github.com/andreylikhterman/TelegramDataResearch/internal/domain"
-	"github.com/andreylikhterman/TelegramDataResearch/internal/infrastructure/logger"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
 )
 
-func registerHandlers(dispatcher *tg.UpdateDispatcher, client *telegram.Client, ch_posts chan domain.Post, ch_messages chan domain.Message, lg *logger.Logger) {
-	dispatcher.OnNewChannelMessage(handleNewChannelMessage(client, ch_posts, ch_messages, lg))
+func registerHandlers(dispatcher *tg.UpdateDispatcher, client *telegram.Client, ch_posts chan domain.Post, ch_messages chan domain.Message) {
+	dispatcher.OnNewChannelMessage(handleNewChannelMessage(client, ch_posts, ch_messages))
 }
 
-func handleNewChannelMessage(client *telegram.Client, ch_posts chan domain.Post, ch_messages chan domain.Message, lg *logger.Logger) func(context.Context, tg.Entities, *tg.UpdateNewChannelMessage) error {
+func handleNewChannelMessage(client *telegram.Client, ch_posts chan domain.Post, ch_messages chan domain.Message) func(context.Context, tg.Entities, *tg.UpdateNewChannelMessage) error {
 	return func(ctx context.Context, e tg.Entities, u *tg.UpdateNewChannelMessage) error {
 		message, ok := u.Message.AsNotEmpty()
 		if !ok {
@@ -108,7 +107,7 @@ func GetUser(ctx context.Context, message tg.NotEmptyMessage, e tg.Entities, cli
 		}
 	} else {
 		users, err := client.API().UsersGetUsers(ctx, []tg.InputUserClass{
-			&tg.InputUser{UserID: userPeer.UserID},
+			&tg.InputUser{UserID: userPeer.GetUserID()},
 		})
 		if err == nil && len(users) > 0 {
 			if fullUser, ok := users[0].(*tg.User); ok {
