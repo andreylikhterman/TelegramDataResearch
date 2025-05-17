@@ -6,6 +6,6 @@ type Message struct {
 	PostId      int
 	UserId      int
 	UserName    string
-	ChannelName string
 	ChannelId   int64
+	ChannelName string
 }

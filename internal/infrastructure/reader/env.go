@@ -1,7 +1,6 @@
 package reader
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -16,7 +15,6 @@ func NewEnvReader() *EnvReader {
 func (e *EnvReader) GetEnv(key string) (string, bool) {
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Println(err)
 		return "", false
 	}
 

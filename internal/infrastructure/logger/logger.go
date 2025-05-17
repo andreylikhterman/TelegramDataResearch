@@ -13,26 +13,18 @@ type Logger struct {
 }
 
 func New() *Logger {
-
 	logFile, err := os.OpenFile("app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		panic("failed to open log file: " + err.Error())
 	}
 
-	// Конфигурация кодировщика JSON (для файла)
 	fileEncoderConfig := zap.NewProductionEncoderConfig()
 	fileEncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
-	// Создаем кастомные кодировщики
 	fileEncoder := zapcore.NewJSONEncoder(fileEncoderConfig)
 
-	// Создаем ядра логирования
-	fileCore := zapcore.NewCore(fileEncoder, zapcore.AddSync(logFile), zapcore.InfoLevel)
+	core := zapcore.NewCore(fileEncoder, zapcore.AddSync(logFile), zapcore.InfoLevel)
 
-	// Объединяем ядра логирования
-	core := zapcore.NewTee(fileCore)
-
-	// Создаем логгер
 	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel))
 	return &Logger{Logger: logger}
 }

@@ -26,27 +26,34 @@ func handleNewChannelMessage(client *telegram.Client, ch_posts chan domain.Post,
 		}
 
 		channelName := getChannelName(ctx, channelPeer.ChannelID, e, client)
-
-		userID, username := GetUser(ctx, message, e, client)
+		userID, username := getUser(ctx, message, e, client)
 		comment, commentID, postID := extractMessageDetails(message)
 
 		if userID == 0 {
-			ch_posts <- domain.Post{Text: comment, PostId: commentID, ChannelId: channelPeer.ChannelID,
-				Channel: channelName}
+			ch_posts <- domain.Post{
+				Text:        comment,
+				PostId:      commentID,
+				ChannelId:   channelPeer.ChannelID,
+				ChannelName: channelName,
+			}
 		} else {
-			ch_messages <- domain.Message{Text: comment, CommentId: commentID, PostId: postID, UserId: userID,
-				ChannelName: channelName, UserName: username, ChannelId: channelPeer.ChannelID}
+			ch_messages <- domain.Message{
+				Text:        comment,
+				CommentId:   commentID,
+				PostId:      postID,
+				UserId:      userID,
+				ChannelName: channelName,
+				UserName:    username,
+				ChannelId:   channelPeer.ChannelID,
+			}
 		}
 		return nil
 	}
 }
 
 func getChannelName(ctx context.Context, channelID int64, e tg.Entities, client *telegram.Client) string {
-	if channel, exists := e.Channels[channelID]; exists {
-		if channel.Title != "" {
-			return channel.Title
-		}
-		return fmt.Sprintf("channel%d", channelID)
+	if channel, exists := e.Channels[channelID]; exists && channel.Title != "" {
+		return channel.Title
 	}
 
 	channels, err := client.API().ChannelsGetChannels(ctx, []tg.InputChannelClass{
@@ -62,33 +69,36 @@ func getChannelName(ctx context.Context, channelID int64, e tg.Entities, client 
 			return channel.Title
 		}
 	}
+
 	return fmt.Sprintf("channel%d", channelID)
 }
 
 func extractMessageDetails(message tg.NotEmptyMessage) (string, int, int) {
-	var comment string
-	var commentID, postID int
-
-	info, ok := message.(*tg.Message)
+	msg, ok := message.(*tg.Message)
 	if !ok {
-		return "false", 0, 0
+		return "", 0, 0
 	}
 
-	comment = info.GetMessage()
-	commentID = info.GetID()
+	comment := msg.GetMessage()
+	commentID := msg.GetID()
+	postID := extractPostID(msg)
 
-	if replyTo, ok := info.GetReplyTo(); ok {
-		if header, ok := replyTo.(*tg.MessageReplyHeader); ok {
-			postID, ok = header.GetReplyToTopID()
-			if postID == 0 {
-				postID = header.ReplyToMsgID
-			}
-		}
-	}
 	return comment, commentID, postID
 }
 
-func GetUser(ctx context.Context, message tg.NotEmptyMessage, e tg.Entities, client *telegram.Client) (int, string) {
+func extractPostID(msg *tg.Message) int {
+	if replyTo, ok := msg.GetReplyTo(); ok {
+		if header, ok := replyTo.(*tg.MessageReplyHeader); ok {
+			if topID, ok := header.GetReplyToTopID(); topID != 0 && ok {
+				return topID
+			}
+			return header.ReplyToMsgID
+		}
+	}
+	return 0
+}
+
+func getUser(ctx context.Context, message tg.NotEmptyMessage, e tg.Entities, client *telegram.Client) (int, string) {
 	fromPeer, ok := message.GetFromID()
 	if !ok {
 		return 0, ""
@@ -99,25 +109,33 @@ func GetUser(ctx context.Context, message tg.NotEmptyMessage, e tg.Entities, cli
 		return 0, ""
 	}
 
-	var username string
-	if user, exists := e.Users[userPeer.UserID]; exists {
-		username = user.Username
-		if username == "" {
-			username = fmt.Sprint("no username")
-		}
-	} else {
-		users, err := client.API().UsersGetUsers(ctx, []tg.InputUserClass{
-			&tg.InputUser{UserID: userPeer.GetUserID()},
-		})
-		if err == nil && len(users) > 0 {
-			if fullUser, ok := users[0].(*tg.User); ok {
-				username = fullUser.Username
-				if username == "" {
-					username = fmt.Sprintf("no username")
-				}
-				e.Users[userPeer.UserID] = fullUser
-			}
-		}
+	userID := userPeer.UserID
+	if user, exists := e.Users[userID]; exists {
+		return int(userID), nonEmptyUsername(user.Username)
 	}
-	return int(userPeer.UserID), username
+
+	return fetchAndCacheUser(ctx, userID, e, client)
+}
+
+func fetchAndCacheUser(ctx context.Context, userID int64, e tg.Entities, client *telegram.Client) (int, string) {
+	users, err := client.API().UsersGetUsers(ctx, []tg.InputUserClass{
+		&tg.InputUser{UserID: userID},
+	})
+	if err != nil || len(users) == 0 {
+		return int(userID), ""
+	}
+
+	if fullUser, ok := users[0].(*tg.User); ok {
+		e.Users[userID] = fullUser
+		return int(userID), nonEmptyUsername(fullUser.Username)
+	}
+
+	return int(userID), ""
+}
+
+func nonEmptyUsername(username string) string {
+	if username == "" {
+		return "no username"
+	}
+	return username
 }
