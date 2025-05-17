@@ -138,7 +138,7 @@ func (t *TelegramDataResearch) handleMessages() {
 		var args []any
 		for range 10 {
 			msg := <-*t.messages_chan
-			args = append(args, msg.Text, msg.CommentId, msg.PostId, msg.UserId, msg.UserName, msg.ChannelName, msg.ChannelId)
+			args = append(args, msg.Text, msg.CommentId, msg.PostId, msg.UserId, msg.UserName, msg.ChannelName, msg.ChannelId, msg.Data, msg.RepliedTo)
 
 			wg.Add(1)
 			go func(id int64, name string) {
@@ -171,9 +171,9 @@ func (t *TelegramDataResearch) handlePosts() {
 
 		var args []any
 		for i := range 1 {
-			placeholders[i] = fmt.Sprintf("($%d, $%d, $%d, $%d)", i*4+1, i*4+2, i*4+3, i*4+4)
+			placeholders[i] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)", i*5+1, i*5+2, i*5+3, i*5+4, i*5+5)
 			post := <-*t.posts_chan
-			args = append(args, post.Text, post.PostId, post.ChannelId, post.ChannelName)
+			args = append(args, post.Text, post.PostId, post.ChannelId, post.ChannelName, post.Data)
 
 			t.logger.Info("New post",
 				zap.String("text", post.Text),
@@ -217,6 +217,7 @@ func (t *TelegramDataResearch) research(accountIdx int, allChannels []string) fu
 			if err := t.processChannel(ctx, accountIdx, ch); err != nil {
 				t.logger.Error("Failed to process channel", zap.String("title", ch.Title), zap.Error(err))
 			}
+			time.Sleep(5 * time.Second)
 		}
 
 		return t.gaps[accountIdx].Run(ctx, t.clients[accountIdx].API(), user.ID, updates.AuthOptions{
@@ -231,7 +232,6 @@ func (t *TelegramDataResearch) processChannel(ctx context.Context, accountIdx in
 	peer, ok := ch.DiscussionPeer.(*tg.InputPeerChannel)
 	if !ok {
 		t.logger.Info("Skipping channel without discussion peer", zap.String("title", ch.Title))
-		time.Sleep(10 * time.Second)
 		return nil
 	}
 
@@ -243,7 +243,7 @@ func (t *TelegramDataResearch) processChannel(ctx context.Context, accountIdx in
 		Participant: &tg.InputPeerSelf{},
 	})
 
-	t.db.InsertChannel(ch.ID, ch.Title)
+	t.db.InsertChannel(peer.ChannelID, ch.Title, int(ch.SubsCount), ch.Type)
 
 	if err == nil {
 		t.logger.Info("Already subscribed", zap.String("title", ch.Title))
@@ -253,21 +253,19 @@ func (t *TelegramDataResearch) processChannel(ctx context.Context, accountIdx in
 			return err
 		}
 
-		lastStoredID, err := t.db.GetMaxCommentIDByChannel(ch.ID)
+		lastStoredID, err := t.db.GetMaxCommentIDByChannel(peer.ChannelID)
 		if err != nil {
 			t.logger.Error("Failed to get last stored message ID", zap.String("title", ch.Title), zap.Error(err))
 			lastStoredID = 0
 		}
-
 		if latestMessageID > int(lastStoredID) && lastStoredID != 0 {
 			entities := tg.Entities{Channels: make(map[int64]*tg.Channel), Users: make(map[int64]*tg.User)}
-			err = GetHistory(ch.ID, lastStoredID, int64(latestMessageID), *t.posts_chan, *t.messages_chan, t.db, t.clients[accountIdx], entities)
+			err = GetHistory(ch, lastStoredID, int64(latestMessageID), *t.posts_chan, *t.messages_chan, t.db, t.clients[accountIdx], entities)
 			if err != nil {
 				t.logger.Error("Failed to fetch history", zap.String("title", ch.Title), zap.Error(err))
 				return err
 			}
 		}
-		time.Sleep(10 * time.Second)
 		return nil
 	}
 
@@ -278,7 +276,6 @@ func (t *TelegramDataResearch) processChannel(ctx context.Context, accountIdx in
 	}
 
 	t.logger.Info("Subscribed to chat", zap.String("title", ch.Title))
-	time.Sleep(10 * time.Second)
 	return nil
 }
 
@@ -318,7 +315,7 @@ func getChannelsList() []string {
 
 func getLastMessageID(ctx context.Context, client *telegram.Client, ch domain.PublicChannel) (int, error) {
 	history, err := client.API().MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
-		Peer:  &tg.InputPeerChannel{ChannelID: ch.ID, AccessHash: ch.AccessHash},
+		Peer:  ch.DiscussionPeer,
 		Limit: 1,
 	})
 	if err != nil {

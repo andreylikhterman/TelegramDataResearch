@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/andreylikhterman/TelegramDataResearch/internal/domain"
 	"github.com/gotd/td/telegram"
@@ -27,7 +28,7 @@ func handleNewChannelMessage(client *telegram.Client, ch_posts chan domain.Post,
 
 		channelName := getChannelName(ctx, channelPeer.ChannelID, e, client)
 		userID, username := getUser(ctx, message, e, client)
-		comment, commentID, postID := extractMessageDetails(message)
+		comment, commentID, postID, data, replied_to := extractMessageDetails(message)
 
 		if userID == 0 {
 			ch_posts <- domain.Post{
@@ -35,6 +36,7 @@ func handleNewChannelMessage(client *telegram.Client, ch_posts chan domain.Post,
 				PostId:      commentID,
 				ChannelId:   channelPeer.ChannelID,
 				ChannelName: channelName,
+				Data:        data,
 			}
 		} else {
 			ch_messages <- domain.Message{
@@ -45,6 +47,8 @@ func handleNewChannelMessage(client *telegram.Client, ch_posts chan domain.Post,
 				ChannelName: channelName,
 				UserName:    username,
 				ChannelId:   channelPeer.ChannelID,
+				Data:        data,
+				RepliedTo:   replied_to,
 			}
 		}
 		return nil
@@ -73,17 +77,25 @@ func getChannelName(ctx context.Context, channelID int64, e tg.Entities, client 
 	return fmt.Sprintf("channel%d", channelID)
 }
 
-func extractMessageDetails(message tg.NotEmptyMessage) (string, int, int) {
+func extractMessageDetails(message tg.NotEmptyMessage) (string, int, int, time.Time, int) {
 	msg, ok := message.(*tg.Message)
 	if !ok {
-		return "", 0, 0
+		return "", 0, 0, time.Time{}, 0
 	}
-
+	repl := 0
+	if msg.ReplyTo != nil {
+		if reply, ok := msg.ReplyTo.(*tg.MessageReplyHeader); ok {
+			repl = reply.ReplyToMsgID
+		}
+	}
 	comment := msg.GetMessage()
 	commentID := msg.GetID()
+	data := msg.Date
+	timestamp := int64(data) // например, UNIX-время
+	t := time.Unix(timestamp, 0)
 	postID := extractPostID(msg)
 
-	return comment, commentID, postID
+	return comment, commentID, postID, t, repl
 }
 
 func extractPostID(msg *tg.Message) int {

@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 type Message struct {
 	Text        string
 	CommentId   int
@@ -8,4 +10,6 @@ type Message struct {
 	UserName    string
 	ChannelId   int64
 	ChannelName string
+	Data        time.Time
+	RepliedTo   int
 }

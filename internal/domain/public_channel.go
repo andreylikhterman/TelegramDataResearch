@@ -7,6 +7,8 @@ type PublicChannel struct {
 	AccessHash     int64
 	Title          string
 	DiscussionPeer tg.InputPeerClass
+	SubsCount      int64
+	Type           string
 }
 
 func NewPublicChannel(id, accessHash int64, title string) *PublicChannel {

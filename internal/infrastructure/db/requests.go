@@ -43,12 +43,12 @@ func (d *MyDB) InsertZeroPostIfNotExists() (int64, error) {
 	return insertedID, nil
 }
 
-func (d *MyDB) InsertChannel(id int64, title string) {
+func (d *MyDB) InsertChannel(id int64, title string, count int, channelType string) {
 	_, err := d.DB.Exec(`
     INSERT INTO channels (id, title, type, subscribers_counter)
     VALUES ($1, $2, $3, $4)
     ON CONFLICT (id) DO NOTHING;`,
-		id, title, "", 0)
+		id, title, channelType, count)
 	if err != nil {
 		log.Fatalf("Failed to insert channel: %v", err)
 	}
@@ -57,12 +57,12 @@ func (d *MyDB) InsertChannel(id int64, title string) {
 func (d *MyDB) InsertMessage(args []any) {
 	placeholders := make([]string, 10)
 	for i := 0; i < 10; i++ {
-		placeholders[i] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*7+1, i*7+2, i*7+3, i*7+4, i*7+5, i*7+6, i*7+7)
+		placeholders[i] = fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*9+1, i*9+2, i*9+3, i*9+4, i*9+5, i*9+6, i*9+7, i*9+8, i*9+9)
 	}
 	query := fmt.Sprintf(`
 INSERT INTO comments (tg_id, post_id, replied_to, user_id, timestamp, value)
-SELECT tmp.id::bigint, p.id, 0, tmp.user_id::bigint, '0001-01-01 00:00:00', tmp.value
-FROM (VALUES %s) AS tmp(value, id, post_id, user_id, user_name, channel_name, channel_id)
+SELECT tmp.id::bigint, p.id, tmp.replied_to::bigint, tmp.user_id::bigint, tmp.data::time, tmp.value
+FROM (VALUES %s) AS tmp(value, id, post_id, user_id, user_name, channel_name, channel_id, data, replied_to)
 LEFT JOIN posts p ON p.post_id_into_channel = tmp.post_id::bigint
 WHERE p.id IS NOT NULL;
 `, strings.Join(placeholders, ", "))
@@ -70,15 +70,13 @@ WHERE p.id IS NOT NULL;
 	if err != nil {
 		log.Fatalf("Ошибка выполнения запроса: %v", err)
 	}
-	rowsAffected, _ := result.RowsAffected()
-	fmt.Printf("Добавлено сообщений: %d\n", rowsAffected)
+	_, _ = result.RowsAffected()
 }
 
 func (d *MyDB) GetMaxCommentIDByChannel(channelID int64) (int64, error) {
 	var maxCommentID sql.NullInt64
-
 	query := `
-        SELECT COALESCE(MAX(c.id), 0)
+        SELECT COALESCE(MAX(c.tg_id), 0)
         FROM comments c
         JOIN posts p ON c.post_id = p.id
         WHERE p.channel_id = $1
@@ -87,7 +85,6 @@ func (d *MyDB) GetMaxCommentIDByChannel(channelID int64) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("query failed: %w", err)
 	}
-
 	if maxCommentID.Valid {
 		return maxCommentID.Int64, nil
 	}
@@ -108,8 +105,8 @@ func (d *MyDB) InsertUser(id int64, name string) {
 func (d *MyDB) InsertPost(placeholders []string, args []any) {
 	query := fmt.Sprintf(`
 INSERT INTO posts (channel_id, post_id_into_channel, timestamp, value)
-SELECT tmp.channel_id::bigint, tmp.post_id_into_channel::bigint, '0001-01-01 00:00:00', tmp.name
-FROM (VALUES %s) AS tmp(name, post_id_into_channel, channel_id, channel);
+SELECT tmp.channel_id::bigint, tmp.post_id_into_channel::bigint, tmp.data::time, tmp.name
+FROM (VALUES %s) AS tmp(name, post_id_into_channel, channel_id, channel, data);
 `, strings.Join(placeholders, ", "))
 	result, err := d.DB.Exec(query, args...)
 	if err != nil {
