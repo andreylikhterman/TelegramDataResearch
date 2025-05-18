@@ -98,7 +98,6 @@ func initClients(numAccounts, apiID int, apiHash string, chPosts chan domain.Pos
 }
 
 func (t *TelegramDataResearch) Run(ctx context.Context) error {
-	t.db.InsertZeroPostIfNotExists()
 	defer t.logger.Sync()
 
 	channels := getChannelsList()
@@ -117,8 +116,8 @@ func (t *TelegramDataResearch) Run(ctx context.Context) error {
 		}(i, client)
 	}
 
-	go t.handleMessages()
-	go t.handlePosts()
+	go t.handleMessages(ctx)
+	go t.handlePosts(ctx)
 
 	wg.Wait()
 	close(*t.posts_chan)
@@ -127,7 +126,7 @@ func (t *TelegramDataResearch) Run(ctx context.Context) error {
 	return runErr
 }
 
-func (t *TelegramDataResearch) handleMessages() {
+func (t *TelegramDataResearch) handleMessages(ctx context.Context) {
 	wg := &sync.WaitGroup{}
 	for {
 		if len(*t.messages_chan) < 10 {
@@ -161,7 +160,7 @@ func (t *TelegramDataResearch) handleMessages() {
 	}
 }
 
-func (t *TelegramDataResearch) handlePosts() {
+func (t *TelegramDataResearch) handlePosts(ctx context.Context) {
 	placeholders := make([]string, 1)
 	for {
 		if len(*t.posts_chan) < 1 {
@@ -217,7 +216,6 @@ func (t *TelegramDataResearch) research(accountIdx int, allChannels []string) fu
 			if err := t.processChannel(ctx, accountIdx, ch); err != nil {
 				t.logger.Error("Failed to process channel", zap.String("title", ch.Title), zap.Error(err))
 			}
-			time.Sleep(5 * time.Second)
 		}
 
 		return t.gaps[accountIdx].Run(ctx, t.clients[accountIdx].API(), user.ID, updates.AuthOptions{
@@ -260,7 +258,7 @@ func (t *TelegramDataResearch) processChannel(ctx context.Context, accountIdx in
 		}
 		if latestMessageID > int(lastStoredID) && lastStoredID != 0 {
 			entities := tg.Entities{Channels: make(map[int64]*tg.Channel), Users: make(map[int64]*tg.User)}
-			err = GetHistory(ch, lastStoredID, int64(latestMessageID), *t.posts_chan, *t.messages_chan, t.db, t.clients[accountIdx], entities)
+			err = GetHistory(ctx, ch, lastStoredID, int64(latestMessageID), *t.posts_chan, *t.messages_chan, t.db, t.clients[accountIdx], entities)
 			if err != nil {
 				t.logger.Error("Failed to fetch history", zap.String("title", ch.Title), zap.Error(err))
 				return err

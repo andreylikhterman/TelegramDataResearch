@@ -70,9 +70,3 @@ func Connect() *sql.DB {
 	log.Println("Migrations applied successfully!")
 	return db
 }
-
-//Пример работы:
-//_, err := db.Exec(`
-//    INSERT INTO channels (id, title, type, subscribers_counter)
-//    VALUES ($1, $2, $3, $4)
-//`, "tg_channel_123", "Технологии и код", "p", 4820)

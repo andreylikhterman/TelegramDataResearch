@@ -16,7 +16,13 @@ func SubscribeToDiscussionChats(ctx context.Context, client *telegram.Client, ch
 		if err := joinDiscussionChannel(ctx, client, ch); err != nil {
 			log.Printf("Не удалось присоединиться к чату %s: %v", ch.Title, err)
 		}
-		time.Sleep(5 * time.Second)
+
+		select {
+		case <-time.After(5 * time.Second):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+
 	}
 	return nil
 }

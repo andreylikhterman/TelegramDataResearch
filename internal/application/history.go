@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"log"
-	"time"
 
 	"github.com/andreylikhterman/TelegramDataResearch/internal/domain"
 	"github.com/andreylikhterman/TelegramDataResearch/internal/infrastructure/db"
@@ -45,13 +44,11 @@ func processMessage(ctx context.Context, message tg.NotEmptyMessage, e tg.Entiti
 	return nil
 }
 
-func GetHistory(channel domain.PublicChannel, lastStoredID, messageID int64, chPosts chan domain.Post, chMessages chan domain.Message, repo *db.MyDB, client *telegram.Client, e tg.Entities) error {
-	ctx := context.Background()
-
+func GetHistory(ctx context.Context, channel domain.PublicChannel, lastStoredID, messageID int64, chPosts chan domain.Post, chMessages chan domain.Message, repo *db.MyDB, client *telegram.Client, e tg.Entities) error {
 	if lastStoredID >= messageID {
 		return nil
 	}
-	time.Sleep(5 * time.Second)
+
 	const batchSize = 100
 
 	for i := lastStoredID + 1; i <= messageID; i += batchSize {

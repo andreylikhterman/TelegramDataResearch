@@ -82,20 +82,21 @@ func extractMessageDetails(message tg.NotEmptyMessage) (string, int, int, time.T
 	if !ok {
 		return "", 0, 0, time.Time{}, 0
 	}
+
 	repl := 0
 	if msg.ReplyTo != nil {
 		if reply, ok := msg.ReplyTo.(*tg.MessageReplyHeader); ok {
 			repl = reply.ReplyToMsgID
 		}
 	}
+
 	comment := msg.GetMessage()
 	commentID := msg.GetID()
-	data := msg.Date
-	timestamp := int64(data) // например, UNIX-время
-	t := time.Unix(timestamp, 0)
+	data := msg.GetDate()
+	timestamp := time.Unix(int64(data), 0)
 	postID := extractPostID(msg)
 
-	return comment, commentID, postID, t, repl
+	return comment, commentID, postID, timestamp, repl
 }
 
 func extractPostID(msg *tg.Message) int {
