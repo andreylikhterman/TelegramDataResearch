@@ -18,7 +18,7 @@ func SubscribeToDiscussionChats(ctx context.Context, client *telegram.Client, ch
 		}
 
 		select {
-		case <-time.After(5 * time.Second):
+		case <-time.After(150 * time.Second):
 		case <-ctx.Done():
 			return ctx.Err()
 		}

@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/andreylikhterman/TelegramDataResearch/internal/domain"
 	"github.com/andreylikhterman/TelegramDataResearch/internal/infrastructure/db"
@@ -49,7 +50,7 @@ func GetHistory(ctx context.Context, channel domain.PublicChannel, lastStoredID,
 		return nil
 	}
 
-	const batchSize = 100
+	const batchSize = 3000
 
 	for i := lastStoredID + 1; i <= messageID; i += batchSize {
 		endID := min(i+batchSize-1, messageID)
@@ -61,6 +62,12 @@ func GetHistory(ctx context.Context, channel domain.PublicChannel, lastStoredID,
 		}
 
 		handleFetchedMessages(ctx, messages, e, client, chPosts, chMessages)
+
+		select {
+		case <-time.After(1 * time.Second):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 
 	return nil

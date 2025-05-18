@@ -28,7 +28,12 @@ func FetchChannelDataByNames(ctx context.Context, client *telegram.Client, chann
 			SubsCount:      int64(participantsCount),
 			Type:           channelType,
 		})
-		time.Sleep(time.Second * 1)
+
+		select {
+		case <-time.After(3 * time.Second):
+		case <-ctx.Done():
+			return []domain.PublicChannel{}, ctx.Err()
+		}
 	}
 	return result, nil
 }
@@ -51,7 +56,12 @@ func FetchChannelDataByID(ctx context.Context, client *telegram.Client, channelI
 			SubsCount:      int64(participantsCount),
 			Type:           channelType,
 		})
-		time.Sleep(time.Second * 1)
+
+		select {
+		case <-time.After(3 * time.Second):
+		case <-ctx.Done():
+			return []domain.PublicChannel{}, ctx.Err()
+		}
 	}
 	return result, nil
 }
