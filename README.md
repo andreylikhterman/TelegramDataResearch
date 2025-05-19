@@ -5,11 +5,18 @@
 Для начала необходимо клонировать гитхаб проект по адресу https://github.com/andreylikhterman/TelegramDataResearch/tree/with_subscription (именно ветка with_subscription). После чего нужно создать файл ```.env``` следующего вида:
 
 ```
-NUM_OF_ACCOUNTS=X
+XNUM_OF_ACCOUNTS=X
 TELEGRAM_API_ID=Y
 TELEGRAM_API_HASH=Z
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=youruser
+DB_PASSWORD=yourpass
+DB_NAME=yourdb
+SSL_MODE=disable
 ```
-где ```NUM_OF_ACCOUNTS``` - количество *Telegram* аккаунтов, с которых будут просматриваться комментарии (через подписку на чат обсуждения, ограничение на аккаунт без *Premium* - 500), TELEGRAM_API_ID и TELEGRAM_API_HASH - поля, которые можно получить на оффициальном сайте https://my.telegram.org, зарегестрировав там аккаунт (одной регистрации хватит для всего сервиса).
+
+где ```NUM_OF_ACCOUNTS``` - количество *Telegram* аккаунтов, с которых будут просматриваться комментарии (через подписку на чат обсуждения, ограничение на аккаунт без *Premium* - 500), TELEGRAM_API_ID и TELEGRAM_API_HASH - поля, которые можно получить на оффициальном сайте https://my.telegram.org, зарегестрировав там аккаунт (одной регистрации хватит для всего сервиса). Далее идут служебные поля для развертывания базы данных - хост, порт, пользователь, пароль, имя БД и включена ли защита SSL.
 
 Далее необходимо перейти по пути ```TelegramDataResearch/internal/application/telegram_data_research.go``` и там найти поле ```channels``` в функции ```Run``` (88 строка) и заполнить его строками с никами каналов (ВАЖНО: ники - не названия, ники - то, что стоит в ссылке на канал после **t.me/** - пример: название канала - Technodeus, ссылка на канал - t.me/technodeus2023, ник - technodeus2023). Для примера слайс заполнен следующим образом: ```"technodeus2023", "cherevatstreams"```
 
@@ -24,12 +31,18 @@ Service that records comments from selected *Telegram* channels.
 To start, you need to clone the GitHub project from https://github.com/andreylikhterman/TelegramDataResearch/tree/with_subscription (specifically the **with_subscription** branch). Then, create a file named ```.env``` with the following content:
 
 ```
-NUM_OF_ACCOUNTS=X
+XNUM_OF_ACCOUNTS=X
 TELEGRAM_API_ID=Y
 TELEGRAM_API_HASH=Z
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=youruser
+DB_PASSWORD=yourpass
+DB_NAME=yourdb
+SSL_MODE=disable
 ```
 
-where ```NUM_OF_ACCOUNTS``` is the number of *Telegram* accounts from which comments will be viewed (via subscription to the discussion chat; the limit for a non-*Premium* account is 500), and TELEGRAM_API_ID and TELEGRAM_API_HASH are the fields you can obtain on the official website https://my.telegram.org by registering an account there (one registration is enough for the entire service).
+where ```NUM_OF_ACCOUNTS``` is the number of *Telegram* accounts from which comments will be viewed (via subscription to the discussion chat; the limit for a non-*Premium* account is 500), and TELEGRAM_API_ID and TELEGRAM_API_HASH are the fields you can obtain on the official website https://my.telegram.org by registering an account there (one registration is enough for the entire service). Next are the service fields for deploying the database — host, port, user, password, database name, and whether SSL protection is enabled.
 
 Next, navigate to ```TelegramDataResearch/internal/application/telegram_data_research.go``` and find the field ```channels``` in the ```Run``` function (line 88) and fill it with strings containing the channel usernames (IMPORTANT: usernames are not the channel names; usernames are what comes in the link after **t.me/** - for example: if the channel name is Technodeus, the channel link is t.me/technodeus2023, then the username is technodeus2023). In the example, the slice is filled as follows: ```"technodeus2023", "cherevatstreams"```.
 
